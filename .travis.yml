@@ -1,0 +1,17 @@
+# need for docker build
+sudo: true
+
+language: go
+
+go:
+  - 1.9.x
+
+before_install:
+  - go get -u github.com/golang/dep/cmd/dep
+
+script:
+  - make build-container
+
+after_success:
+  - docker login -u "${QUAY_IO_USERNAME}" -p "${QUAY_IO_PASSWORD}" quay.io 
+  - make push-container

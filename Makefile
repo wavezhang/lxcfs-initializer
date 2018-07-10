@@ -1,4 +1,4 @@
-REGISTRY_NAME = quay.io/lxcfs-initializer
+REGISTRY_NAME = quay.io/samblade
 IMAGE_VERSION = v0.0.3
 BIN = lxcfs-initializer
 

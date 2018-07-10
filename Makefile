@@ -1,4 +1,4 @@
-REGISTRY_NAME = quay.io/samblade
+REGISTRY_NAME = quay.io/samblade/lxcfs-initializer
 IMAGE_VERSION = v0.0.3
 BIN = lxcfs-initializer
 
@@ -13,7 +13,7 @@ build-container: $(BIN)
 	docker build -t $(REGISTRY_NAME):$(IMAGE_VERSION) .
 
 push-container: build-container
-	docker push $(REGISTRY_NAME)/$(BIN):$(IMAGE_VERSION)
+	docker push $(REGISTRY_NAME):$(IMAGE_VERSION)
 
 clean:
 	go clean -r -x

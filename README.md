@@ -7,7 +7,7 @@
 Build initializer
 
 ```
-build-container
+make build-container
 ```
 
 #### Deploy  
@@ -15,18 +15,18 @@ build-container
 Deploy LXCFS FUSE with DeamonSet
 
 ```
-kubectl apply -f lxcfs-daemonset.yaml
+kubectl apply -f deploy/kubernetes/lxcfs-daemonset.yaml
 ```
 
 Deploy initializer
 
 ```
-kubectl apply -f lxcfs-initializer.yaml
+kubectl apply -f deploy/kubernetes/lxcfs-initializer.yaml
 ```
 
 #### Test
 
 ```
-kubectl apply -f web.yaml
+kubectl apply -f example/web.yaml
 ```
 

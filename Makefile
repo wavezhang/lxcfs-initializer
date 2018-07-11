@@ -7,7 +7,8 @@ BIN = lxcfs-initializer
 all: $(BIN)
 
 $(BIN):
-	GOOS=linux go build -a --ldflags '-extldflags "-static"' -tags netgo -installsuffix netgo -o $(BIN) .
+	if [ ! -d ./vendor ]; then dep ensure; fi
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(BIN) .
 
 build-container: $(BIN)
 	docker build -t $(REGISTRY_NAME):$(IMAGE_VERSION) .

@@ -1,0 +1,28 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lxcfs-initializer-default
+  namespace: default
+rules:
+- apiGroups: ["*"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["initialize", "patch", "watch", "list", "update"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lxcfs-initializer-service-account
+  namespace: default
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: lxcfs-initializer-role-binding
+subjects:
+- kind: ServiceAccount
+  name: lxcfs-initializer-service-account
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: lxcfs-initializer-default
+  apiGroup: rbac.authorization.k8s.io

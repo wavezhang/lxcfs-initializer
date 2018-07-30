@@ -1,0 +1,29 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  initializers:
+    pending: []
+  labels:
+    app: lxcfs-initializer
+  name: lxcfs-initializer
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: lxcfs-initializer
+      name: lxcfs-initializer
+    spec:
+      serviceAccountName: lxcfs-initializer-service-account
+      containers:
+      - name: lxcfs-initializer
+        image: quay.io/samblade/lxcfs-initializer:v0.0.3
+        args:
+          - "-annotation=initializer.kubernetes.io/lxcfs"
+          - "-require-annotation=true"
+        volumeMounts:
+        - mountPath: /tmp
+          name: cache-volume
+      volumes:
+      - name: cache-volume
+        emptyDir: {}

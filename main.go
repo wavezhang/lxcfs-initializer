@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"k8s.io/api/apps/v1beta1"
-	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -200,10 +199,10 @@ func main() {
 		},
 	}
 
-	_, ssController := cache.NewInformer(includeUninitializedssWatchlist, &v1.StatefulSet{}, resyncPeriod,
+	_, ssController := cache.NewInformer(includeUninitializedssWatchlist, &v1beta1.StatefulSet{}, resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				err := initializeStatefulSet(obj.(*v1.StatefulSet), c, clientset)
+				err := initializeStatefulSet(obj.(*v1beta1.StatefulSet), c, clientset)
 				if err != nil {
 					log.Println(err)
 				}
@@ -289,7 +288,7 @@ func initializeDeployment(deployment *v1beta1.Deployment, c *config, clientset *
 	return nil
 }
 
-func initializeStatefulSet(statefulSet *v1.StatefulSet, c *config, clientset *kubernetes.Clientset) error {
+func initializeStatefulSet(statefulSet *v1beta1.StatefulSet, c *config, clientset *kubernetes.Clientset) error {
 	if statefulSet.ObjectMeta.GetInitializers() != nil {
 		pendingInitializers := statefulSet.ObjectMeta.GetInitializers().Pending
 
@@ -310,7 +309,7 @@ func initializeStatefulSet(statefulSet *v1.StatefulSet, c *config, clientset *ku
 				_, ok := a[annotation]
 				if !ok {
 					log.Printf("Required '%s' annotation missing; skipping lxcfs injection", annotation)
-					_, err := clientset.AppsV1().StatefulSets(statefulSet.Namespace).Update(initializedStatefulSet)
+					_, err := clientset.AppsV1beta1().StatefulSets(statefulSet.Namespace).Update(initializedStatefulSet)
 					if err != nil {
 						return err
 					}
@@ -338,12 +337,12 @@ func initializeStatefulSet(statefulSet *v1.StatefulSet, c *config, clientset *ku
 				return err
 			}
 
-			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1.StatefulSet{})
+			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1beta1.StatefulSet{})
 			if err != nil {
 				return err
 			}
 
-			_, err = clientset.AppsV1().StatefulSets(statefulSet.Namespace).Patch(statefulSet.Name, types.StrategicMergePatchType, patchBytes)
+			_, err = clientset.AppsV1beta1().StatefulSets(statefulSet.Namespace).Patch(statefulSet.Name, types.StrategicMergePatchType, patchBytes)
 			if err != nil {
 				return err
 			}

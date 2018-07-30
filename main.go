@@ -185,7 +185,7 @@ func main() {
 
 
 
-	ssWatchlist := cache.NewListWatchFromClient(restClient, "statefulset", corev1.NamespaceAll, fields.Everything())
+	ssWatchlist := cache.NewListWatchFromClient(restClient, "statefulsets", corev1.NamespaceAll, fields.Everything())
 
 	// Wrap the returned watchlist to workaround the inability to include
 	// the `IncludeUninitialized` list option when setting up watch clients.

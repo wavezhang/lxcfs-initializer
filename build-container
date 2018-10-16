@@ -1,5 +1,5 @@
 #!/bin/bash
 ./build
-docker build -t registry.cn-hangzhou.aliyuncs.com/denverdino/lxcfs-initializer:0.0.2 .
-docker push registry.cn-hangzhou.aliyuncs.com/denverdino/lxcfs-initializer:0.0.2
+docker build -t zexi/lxcfs-initializer:0.0.3 .
+docker push zexi/lxcfs-initializer:0.0.3
 rm lxcfs-initializer

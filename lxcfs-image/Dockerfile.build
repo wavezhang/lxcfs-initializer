@@ -1,0 +1,10 @@
+FROM frolvlad/alpine-glibc:glibc-2.28
+RUN export HTTP_PROXY=http://10.168.222.195:8123 && export HTTPS_PROXY=$HTTP_PROXY && \
+	apk update && apk --no-cache add gcc automake make libtool build-base linux-headers autoconf fuse fuse-dev
+RUN wget https://github.com/Zexi/lxcfs/archive/cpu-view.zip && \
+	unzip cpu-view.zip && mv lxcfs-cpu-view lxcfs
+RUN cd /lxcfs && ./bootstrap.sh && ./configure && make
+RUN mkdir -p /usr/local/lib/lxcfs && cp /lxcfs/.libs/liblxcfs.so /usr/local/lib/lxcfs
+
+STOPSIGNAL SIGINT
+CMD ["/lxcfs/lxcfs", "-f", "-d", "/var/lib/lxcfs"]

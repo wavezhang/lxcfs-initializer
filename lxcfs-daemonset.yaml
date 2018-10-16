@@ -14,19 +14,32 @@ spec:
         app: lxcfs
     spec:
       hostPID: true
+      hostNetwork: true
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
       - name: lxcfs
-        image: registry.cn-hangzhou.aliyuncs.com/denverdino/lxcfs:2.0.8
+        image: zexi/lxcfs:cpu-view
         imagePullPolicy: Always
         securityContext:
           privileged: true
         volumeMounts:
-        - name: rootfs
-          mountPath: /host
+        - name: cgroup
+          mountPath: /sys/fs/cgroup
+        - name: lxcfs
+          mountPath: /var/lib/lxcfs
+          mountPropagation: Bidirectional
+        - name: dev
+          mountPath: /dev
       volumes:
-      - name: rootfs
+      - name: cgroup
         hostPath:
-          path: /
+          path: /sys/fs/cgroup
+      - name: lxcfs
+        hostPath:
+          path: /var/lib/lxcfs
+          type: DirectoryOrCreate
+      - name: dev
+        hostPath:
+          path: /dev

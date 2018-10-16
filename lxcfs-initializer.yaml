@@ -46,7 +46,7 @@ spec:
       serviceAccountName: lxcfs-initializer-service-account
       containers:
         - name: lxcfs-initializer
-          image: registry.cn-hangzhou.aliyuncs.com/denverdino/lxcfs-initializer:0.0.2
+          image: zexi/lxcfs-initializer:0.0.3
           imagePullPolicy: Always
           args:
             - "-annotation=initializer.kubernetes.io/lxcfs"

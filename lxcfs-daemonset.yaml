@@ -4,6 +4,7 @@ metadata:
   name: lxcfs
   labels:
     app: lxcfs
+    lxcfs: "false"
 spec:
   selector:
     matchLabels:
@@ -12,6 +13,7 @@ spec:
     metadata:
       labels:
         app: lxcfs
+        lxcfs: "false"
     spec:
       hostPID: true
       hostNetwork: true

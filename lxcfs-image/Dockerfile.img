@@ -2,7 +2,8 @@ FROM frolvlad/alpine-glibc:glibc-2.28
 RUN apk update && apk --no-cache add fuse fuse-dev
 ADD ./lxcfs /lxcfs/lxcfs
 ADD ./liblxcfs.so  /usr/local/lib/lxcfs/
+ADD ./start.sh /start.sh
 
 STOPSIGNAL SIGINT
 
-CMD ["/lxcfs/lxcfs", "-f", "/var/lib/lxcfs"]
+CMD ["/start.sh"]

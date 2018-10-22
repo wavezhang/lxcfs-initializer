@@ -1,5 +1,0 @@
-#!/bin/bash
-
-build_img=zexi/lxcfs:cpu-view
-
-docker build . -f ./Dockerfile.img -t $build_img

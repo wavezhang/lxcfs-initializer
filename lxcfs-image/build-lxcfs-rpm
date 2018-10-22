@@ -1,0 +1,9 @@
+#!/bin/bash -x
+
+build_img=zexi/lxcfs-rpm-maker
+
+docker build . -t $build_img -f ./Dockerfile.build
+
+docker run --rm -v $(pwd):/root  $build_img /root/make-rpm.sh
+
+find ./rpmbuild/RPMS/x86_64 -type f

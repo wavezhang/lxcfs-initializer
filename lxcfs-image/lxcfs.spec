@@ -1,6 +1,6 @@
 Summary: Linux Containers File System
 Name: lxcfs
-Version: 3.0.2.cfs
+Version: 3.1.0.cfs
 Release: 0%{?dist}
 URL:  https://github.com/Zexi/lxcfs/archive/cpu-view.zip
 License: Apache 2

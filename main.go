@@ -16,6 +16,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path"
 	"os/signal"
 	"syscall"
 	"time"
@@ -52,6 +53,23 @@ type config struct {
 	volumeMounts []corev1.VolumeMount
 }
 
+func generateVolumes(volumeMounts []corev1.VolumeMount, prefix string) []corev1.Volume {
+	var volumes = make([]corev1.Volume, 0)
+	for _, vm := range volumeMounts {
+		volumes = append(volumes, 
+			corev1.Volume{
+				Name: vm.Name,
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: path.Join(prefix, vm.MountPath),
+					},
+				},
+			})
+	}
+	return volumes
+
+}
+
 func main() {
 	flag.StringVar(&annotation, "annotation", defaultAnnotation, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
@@ -72,10 +90,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//:/proc/cpuinfo:rw -v :/proc/diskstats:rw -v /var/lib/lxcfs/proc/meminfo:/proc/meminfo:rw -v /var/lib/lxcfs/proc/stat:/proc/stat:rw -v /var/lib/lxcfs/proc/uptime:/proc/uptime:rw -v /var/lib/lxcfs/proc/swaps:/proc/swaps:rw
-
-	c := &config{
-		volumeMounts: []corev1.VolumeMount{
+	//:/proc/cpuinfo:rw -v :/proc/diskstats:rw -v /var/lib/lxcfs/proc/meminfo:/proc/meminfo:rw -v /var/lib/lxcfs/proc/stat:/proc/stat:rw -v /var/lib/lxcfs/proc/uptime:/proc/uptime:rw -v /var/lib/lxcfs/proc/swaps:/proc/swaps:rw -v :/proc/loadavg
+	volumeMounts := 
+		[]corev1.VolumeMount{
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-cpuinfo",
 				MountPath: "/proc/cpuinfo",
@@ -100,57 +117,21 @@ func main() {
 				Name:      "lxcfs-proc-swaps",
 				MountPath: "/proc/swaps",
 			},
-		},
-		volumes: []corev1.Volume{
-			corev1.Volume{
-				Name: "lxcfs-proc-cpuinfo",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/var/lib/lxcfs/proc/cpuinfo",
-					},
-				},
+			corev1.VolumeMount{
+				Name:      "lxcfs-proc-loadavg",
+				MountPath: "/proc/loadavg",
 			},
-			corev1.Volume{
-				Name: "lxcfs-proc-diskstats",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/var/lib/lxcfs/proc/diskstats",
-					},
-				},
+			corev1.VolumeMount{
+				Name:      "lxcfs-sys-cpu-online",
+				MountPath: "/sys/devices/system/cpu/online",
 			},
-			corev1.Volume{
-				Name: "lxcfs-proc-meminfo",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/var/lib/lxcfs/proc/meminfo",
-					},
-				},
-			},
-			corev1.Volume{
-				Name: "lxcfs-proc-stat",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/var/lib/lxcfs/proc/stat",
-					},
-				},
-			},
-			corev1.Volume{
-				Name: "lxcfs-proc-uptime",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/var/lib/lxcfs/proc/uptime",
-					},
-				},
-			},
-			corev1.Volume{
-				Name: "lxcfs-proc-swaps",
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/var/lib/lxcfs/proc/swaps",
-					},
-				},
-			},
-		},
+		}
+	prefix := "/var/lib/lxcfs"
+	volumes := generateVolumes(volumeMounts, prefix)
+
+	c := &config{
+		volumeMounts: volumeMounts,
+		volumes: volumes,
 	}
 	// Watch uninitialized Deployments in all namespaces.
 	restClient := clientset.AppsV1beta1().RESTClient()
@@ -212,16 +193,17 @@ func main() {
 
 
 	stop := make(chan struct{})
+	ssStop := make(chan struct{})
 	go controller.Run(stop)
-	go ssController.Run(stop)
+	go ssController.Run(ssStop)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
-	<-signalChan
 
 	log.Println("Shutdown signal received, exiting...")
 	close(stop)
+	close(ssStop)
 }
 
 func initializeDeployment(deployment *v1beta1.Deployment, c *config, clientset *kubernetes.Clientset) error {

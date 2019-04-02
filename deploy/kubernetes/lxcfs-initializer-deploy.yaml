@@ -17,7 +17,7 @@ spec:
       serviceAccountName: lxcfs-initializer-service-account
       containers:
       - name: lxcfs-initializer
-        image: quay.io/samblade/lxcfs-initializer:v0.0.3
+        image: quay.io/samblade/lxcfs-initializer:v0.0.4
         args:
           - "-annotation=initializer.kubernetes.io/lxcfs"
           - "-require-annotation=true"

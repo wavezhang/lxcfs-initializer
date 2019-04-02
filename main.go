@@ -118,10 +118,6 @@ func main() {
 				MountPath: "/proc/swaps",
 			},
 			corev1.VolumeMount{
-				Name:      "lxcfs-proc-loadavg",
-				MountPath: "/proc/loadavg",
-			},
-			corev1.VolumeMount{
 				Name:      "lxcfs-sys-cpu-online",
 				MountPath: "/sys/devices/system/cpu/online",
 			},

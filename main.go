@@ -98,37 +98,36 @@ func main() {
 	// -v /var/lib/lxcfs/proc/swaps:/proc/swaps:rw
 	// -v /var/lib/lxcfs/proc/uptime:/proc/uptime:rw
 	// -v /var/lib/lxcfs/sys/devices/system/cpu/online:/sys/devices/system/cpu/online:rw
-	c := &config{
-		volumeMounts: []corev1.VolumeMount{
-			corev1.VolumeMount{
-				Name:      "lxcfs-proc-cpuinfo",
-				MountPath: "/proc/cpuinfo",
-			},
-			corev1.VolumeMount{
-				Name:      "lxcfs-proc-meminfo",
-				MountPath: "/proc/meminfo",
-			},
-			corev1.VolumeMount{
-				Name:      "lxcfs-proc-diskstats",
-				MountPath: "/proc/diskstats",
-			},
-			corev1.VolumeMount{
-				Name:      "lxcfs-proc-stat",
-				MountPath: "/proc/stat",
-			},
-			corev1.VolumeMount{
-				Name:      "lxcfs-proc-swaps",
-				MountPath: "/proc/swaps",
-			},
-			corev1.VolumeMount{
-				Name:      "lxcfs-proc-uptime",
-				MountPath: "/proc/uptime",
-			},
-			corev1.VolumeMount{
-				Name:      "lxcfs-sys-cpu-online",
-				MountPath: "/sys/devices/system/cpu/online",
-			},
-		}
+	volumeMounts := []corev1.VolumeMount{
+		corev1.VolumeMount{
+			Name:      "lxcfs-proc-cpuinfo",
+			MountPath: "/proc/cpuinfo",
+		},
+		corev1.VolumeMount{
+			Name:      "lxcfs-proc-meminfo",
+			MountPath: "/proc/meminfo",
+		},
+		corev1.VolumeMount{
+			Name:      "lxcfs-proc-diskstats",
+			MountPath: "/proc/diskstats",
+		},
+		corev1.VolumeMount{
+			Name:      "lxcfs-proc-stat",
+			MountPath: "/proc/stat",
+		},
+		corev1.VolumeMount{
+			Name:      "lxcfs-proc-swaps",
+			MountPath: "/proc/swaps",
+		},
+		corev1.VolumeMount{
+			Name:      "lxcfs-proc-uptime",
+			MountPath: "/proc/uptime",
+		},
+		corev1.VolumeMount{
+			Name:      "lxcfs-sys-cpu-online",
+			MountPath: "/sys/devices/system/cpu/online",
+		},
+	}
 	prefix := "/var/lib/lxcfs"
 	volumes := generateVolumes(volumeMounts, prefix)
 

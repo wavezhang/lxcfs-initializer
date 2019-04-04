@@ -37,7 +37,8 @@ import (
 const (
 	defaultAnnotation      = "initializer.kubernetes.io/lxcfs"
 	defaultInitializerName = "lxcfs.initializer.kubernetes.io"
-	defaultNamespace       = "default"
+	lxcfsLabel             = "lxcfs"
+	notUseLxcfs            = "false"
 )
 
 var (
@@ -135,9 +136,10 @@ func main() {
 		volumeMounts: volumeMounts,
 		volumes: volumes,
 	}
-	// Watch uninitialized Deployments in all namespaces.
-	restClient := clientset.AppsV1().RESTClient()
-	watchlist := cache.NewListWatchFromClient(restClient, "deployments", corev1.NamespaceAll, fields.Everything())
+
+	// Watch uninitialized Pods in all namespaces.
+	restClient := clientset.CoreV1().RESTClient()
+	watchlist := cache.NewListWatchFromClient(restClient, "pods", corev1.NamespaceAll, fields.Everything())
 
 	// Wrap the returned watchlist to workaround the inability to include
 	// the `IncludeUninitialized` list option when setting up watch clients.
@@ -154,38 +156,10 @@ func main() {
 
 	resyncPeriod := 30 * time.Second
 
-	_, controller := cache.NewInformer(includeUninitializedWatchlist, &v1.Deployment{}, resyncPeriod,
+	_, controller := cache.NewInformer(includeUninitializedWatchlist, &corev1.Pod{}, resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				err := initializeDeployment(obj.(*v1.Deployment), c, clientset)
-				if err != nil {
-					log.Println(err)
-				}
-			},
-		},
-	)
-
-
-
-	ssWatchlist := cache.NewListWatchFromClient(restClient, "statefulsets", corev1.NamespaceAll, fields.Everything())
-
-	// Wrap the returned watchlist to workaround the inability to include
-	// the `IncludeUninitialized` list option when setting up watch clients.
-	includeUninitializedssWatchlist := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.IncludeUninitialized = true
-			return ssWatchlist.List(options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.IncludeUninitialized = true
-			return ssWatchlist.Watch(options)
-		},
-	}
-
-	_, ssController := cache.NewInformer(includeUninitializedssWatchlist, &v1beta1.StatefulSet{}, resyncPeriod,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				err := initializeStatefulSet(obj.(*v1beta1.StatefulSet), c, clientset)
+				err := initializePod(obj.(*corev1.Pod), c, clientset)
 				if err != nil {
 					log.Println(err)
 				}
@@ -195,9 +169,7 @@ func main() {
 
 
 	stop := make(chan struct{})
-	ssStop := make(chan struct{})
 	go controller.Run(stop)
-	go ssController.Run(ssStop)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
@@ -205,31 +177,30 @@ func main() {
 
 	log.Println("Shutdown signal received, exiting...")
 	close(stop)
-	close(ssStop)
 }
 
-func initializeDeployment(deployment *v1.Deployment, c *config, clientset *kubernetes.Clientset) error {
-	if deployment.ObjectMeta.GetInitializers() != nil {
-		pendingInitializers := deployment.ObjectMeta.GetInitializers().Pending
+func initializePod(pod *corev1.Pod, c *config, clientset *kubernetes.Clientset) error {
+	if pod.ObjectMeta.GetInitializers() != nil {
+		pendingInitializers := pod.ObjectMeta.GetInitializers().Pending
 
 		if initializerName == pendingInitializers[0].Name {
-			log.Printf("Initializing deployment: %s", deployment.Name)
+			log.Printf("Initializing pod: %s", pod.Name)
 
-			initializedDeployment := deployment.DeepCopy()
+			initializedPod := pod.DeepCopy()
 
 			// Remove self from the list of pending Initializers while preserving ordering.
 			if len(pendingInitializers) == 1 {
-				initializedDeployment.ObjectMeta.Initializers = nil
+				initializedPod.ObjectMeta.Initializers = nil
 			} else {
-				initializedDeployment.ObjectMeta.Initializers.Pending = append(pendingInitializers[:0], pendingInitializers[1:]...)
+				initializedPod.ObjectMeta.Initializers.Pending = append(pendingInitializers[:0], pendingInitializers[1:]...)
 			}
 
 			if requireAnnotation {
-				a := deployment.ObjectMeta.GetAnnotations()
+				a := pod.ObjectMeta.GetAnnotations()
 				_, ok := a[annotation]
 				if !ok {
-					log.Printf("Required '%s' annotation missing; skipping lxcfs injection", annotation)
-					_, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(initializedDeployment)
+					log.Printf("Required %q annotation missing; pod %q skipping lxcfs injection", annotation, pod.Name)
+					_, err := clientset.CoreV1().Pods(pod.Namespace).Update(initializedPod)
 					if err != nil {
 						return err
 					}
@@ -237,96 +208,42 @@ func initializeDeployment(deployment *v1.Deployment, c *config, clientset *kuber
 				}
 			}
 
-			containers := initializedDeployment.Spec.Template.Spec.Containers
-
-			// Modify the Deployment's Pod template to include the Envoy container
-			// and configuration volume. Then patch the original deployment.
-			for i := range containers {
-				containers[i].VolumeMounts = append(containers[i].VolumeMounts, c.volumeMounts...)
-			}
-
-			initializedDeployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, c.volumes...)
-
-			oldData, err := json.Marshal(deployment)
-			if err != nil {
-				return err
-			}
-
-			newData, err := json.Marshal(initializedDeployment)
-			if err != nil {
-				return err
-			}
-
-			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1.Deployment{})
-			if err != nil {
-				return err
-			}
-
-			_, err = clientset.AppsV1().Deployments(deployment.Namespace).Patch(deployment.Name, types.StrategicMergePatchType, patchBytes)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func initializeStatefulSet(statefulSet *v1beta1.StatefulSet, c *config, clientset *kubernetes.Clientset) error {
-	if statefulSet.ObjectMeta.GetInitializers() != nil {
-		pendingInitializers := statefulSet.ObjectMeta.GetInitializers().Pending
-
-		if initializerName == pendingInitializers[0].Name {
-			log.Printf("Initializing statefulSet: %s", statefulSet.Name)
-
-			initializedStatefulSet := statefulSet.DeepCopy()
-
-			// Remove self from the list of pending Initializers while preserving ordering.
-			if len(pendingInitializers) == 1 {
-				initializedStatefulSet.ObjectMeta.Initializers = nil
-			} else {
-				initializedStatefulSet.ObjectMeta.Initializers.Pending = append(pendingInitializers[:0], pendingInitializers[1:]...)
-			}
-
-			if requireAnnotation {
-				a := statefulSet.ObjectMeta.GetAnnotations()
-				_, ok := a[annotation]
-				if !ok {
-					log.Printf("Required '%s' annotation missing; skipping lxcfs injection", annotation)
-					_, err := clientset.AppsV1beta1().StatefulSets(statefulSet.Namespace).Update(initializedStatefulSet)
-					if err != nil {
-						return err
-					}
-					return nil
+			labels := pod.ObjectMeta.GetLabels()
+			if val, ok := labels[lxcfsLabel]; ok && val == notUseLxcfs {
+				log.Printf("Pod %q set lxcfs=false label; skipping lxcfs injection", pod.Name)
+				_, err := clientset.CoreV1().Pods(pod.Namespace).Update(initializedPod)
+				if err != nil {
+					return err
 				}
+				return nil
 			}
 
-			containers := initializedStatefulSet.Spec.Template.Spec.Containers
+			containers := initializedPod.Spec.Containers
 
-			// Modify the StatefulSet's Pod template to include the Envoy container
-			// and configuration volume. Then patch the original statefulSet.
+			// Modify the Pod to include the Envoy container
+			// and configuration volume. Then patch the original pod.
 			for i := range containers {
 				containers[i].VolumeMounts = append(containers[i].VolumeMounts, c.volumeMounts...)
 			}
 
-			initializedStatefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, c.volumes...)
+			initializedPod.Spec.Volumes = append(pod.Spec.Volumes, c.volumes...)
 
-			oldData, err := json.Marshal(statefulSet)
+			oldData, err := json.Marshal(pod)
 			if err != nil {
 				return err
 			}
 
-			newData, err := json.Marshal(initializedStatefulSet)
+			newData, err := json.Marshal(initializedPod)
 			if err != nil {
 				return err
 			}
 
-			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1beta1.StatefulSet{})
+			patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, corev1.Pod{})
 			if err != nil {
 				return err
 			}
 
-			_, err = clientset.AppsV1beta1().StatefulSets(statefulSet.Namespace).Patch(statefulSet.Name, types.StrategicMergePatchType, patchBytes)
+			_, err = clientset.CoreV1().Pods(pod.Namespace).Patch(pod.Name, types.StrategicMergePatchType, patchBytes)
 			if err != nil {
 				return err
 			}

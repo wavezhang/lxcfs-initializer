@@ -4,6 +4,7 @@ metadata:
   name: lxcfs
   labels:
     app: lxcfs
+    lxcfs: "false"
 spec:
   selector:
     matchLabels:
@@ -12,14 +13,20 @@ spec:
     metadata:
       labels:
         app: lxcfs
+        lxcfs: "false"
     spec:
       hostPID: true
+      hostNetwork: true
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
       - name: lxcfs
+<<<<<<< HEAD:deploy/kubernetes/lxcfs-daemonset.yaml
         image: quay.io/samblade/lxcfs
+=======
+        image: zexi/lxcfs:cpu-view
+>>>>>>> d75e298c126fd2eb5f3129457645f0403010b784:lxcfs-daemonset.yaml
         imagePullPolicy: Always
         securityContext:
           privileged: true
@@ -29,16 +36,30 @@ spec:
         - name: lxcfs
           mountPath: /var/lib/lxcfs
           mountPropagation: Bidirectional
+<<<<<<< HEAD:deploy/kubernetes/lxcfs-daemonset.yaml
         - name: usr-local
           mountPath: /usr/local
+=======
+        - name: dev
+          mountPath: /dev
+>>>>>>> d75e298c126fd2eb5f3129457645f0403010b784:lxcfs-daemonset.yaml
       volumes:
       - name: cgroup
         hostPath:
           path: /sys/fs/cgroup
+<<<<<<< HEAD:deploy/kubernetes/lxcfs-daemonset.yaml
       - name: usr-local
         hostPath:
           path: /usr/local
+=======
+>>>>>>> d75e298c126fd2eb5f3129457645f0403010b784:lxcfs-daemonset.yaml
       - name: lxcfs
         hostPath:
           path: /var/lib/lxcfs
           type: DirectoryOrCreate
+<<<<<<< HEAD:deploy/kubernetes/lxcfs-daemonset.yaml
+=======
+      - name: dev
+        hostPath:
+          path: /dev
+>>>>>>> d75e298c126fd2eb5f3129457645f0403010b784:lxcfs-daemonset.yaml

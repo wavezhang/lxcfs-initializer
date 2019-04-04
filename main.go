@@ -14,7 +14,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"k8s.io/api/apps/v1"
 	"log"
 	"os"
 	"path"

@@ -8,10 +8,10 @@ nsenter -m/proc/1/ns/mnt [ -L /etc/mtab ] || \
 # Update lxcfs
 cp -f /lxcfs/lxcfs /usr/local/bin/lxcfs
 cp -f /lxcfs/liblxcfs.so /usr/local/lib/lxcfs/liblxcfs.so
-cp -a /usr/lib64/libfuse.so* /usr/local/lib64/
 
 # Prepare
 mkdir -p /usr/local/lib/lxcfs /var/lib/lxcfs
+exec nsenter -m/proc/1/ns/mnt yum install fuse-libs -y
 
 # Mount
 exec nsenter -m/proc/1/ns/mnt lxcfs /var/lib/lxcfs/

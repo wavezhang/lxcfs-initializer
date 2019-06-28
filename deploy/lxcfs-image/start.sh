@@ -11,7 +11,7 @@ cp -f /lxcfs/liblxcfs.so /usr/local/lib/lxcfs/liblxcfs.so
 
 # Prepare
 mkdir -p /usr/local/lib/lxcfs /var/lib/lxcfs
-exec nsenter -m/proc/1/ns/mnt yum install fuse-libs -y
+nsenter -m/proc/1/ns/mnt yum install fuse-libs -y || true
 
 # Mount
 exec nsenter -m/proc/1/ns/mnt lxcfs /var/lib/lxcfs/

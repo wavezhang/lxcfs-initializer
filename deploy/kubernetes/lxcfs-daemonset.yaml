@@ -19,9 +19,8 @@ spec:
         effect: NoSchedule
       containers:
       - name: lxcfs
-        image: quay.io/samblade/lxcfs
+        image: quay.io/samblade/lxcfs:release
         imagePullPolicy: Always
-        command: ["bash", "-c", "sleep 100000"]
         securityContext:
           privileged: true
         volumeMounts:

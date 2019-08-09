@@ -37,6 +37,7 @@ import (
 const (
 	defaultAnnotation      = "initializer.kubernetes.io/lxcfs"
 	defaultInitializerName = "lxcfs.initializer.kubernetes.io"
+	defaultLxcfsDir        = "/var/lib/lxcfs"
 	defaultNamespace       = "default"
 )
 
@@ -73,6 +74,7 @@ func generateVolumes(volumeMounts []corev1.VolumeMount, prefix string) []corev1.
 func main() {
 	flag.StringVar(&annotation, "annotation", defaultAnnotation, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
+	flag.StringVar(&lxcfsDir, "lxcfs-dir", defaultLxcfsDir, "The lxcfs mount path")
 	flag.StringVar(&namespace, "namespace", "default", "The configuration namespace")
 	flag.BoolVar(&requireAnnotation, "require-annotation", true, "Require annotation for initialization")
 	flag.Parse()
@@ -122,8 +124,7 @@ func main() {
 				MountPath: "/sys/devices/system/cpu/online",
 			},
 		}
-	prefix := "/var/lib/lxcfs"
-	volumes := generateVolumes(volumeMounts, prefix)
+	volumes := generateVolumes(volumeMounts, lxcfsDir)
 
 	c := &config{
 		volumeMounts: volumeMounts,

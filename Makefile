@@ -1,5 +1,5 @@
 REGISTRY_NAME = quay.io/samblade/lxcfs-initializer
-IMAGE_VERSION = v0.0.5
+IMAGE_VERSION = v0.0.6
 BIN = lxcfs-initializer
 
 .PHONY: all $(BIN) clean

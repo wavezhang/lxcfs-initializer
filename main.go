@@ -38,6 +38,7 @@ const (
 	defaultAnnotation      = "initializer.kubernetes.io/lxcfs"
 	defaultInitializerName = "lxcfs.initializer.kubernetes.io"
 	defaultLxcfsDir        = "/var/lib/lxcfs"
+	defaultProgation       = "None"
 	defaultNamespace       = "default"
 )
 
@@ -45,6 +46,8 @@ var (
 	annotation        string
 	configmap         string
 	initializerName   string
+	lxcfsDir          string
+	progation         string
 	namespace         string
 	requireAnnotation bool
 )
@@ -75,6 +78,7 @@ func main() {
 	flag.StringVar(&annotation, "annotation", defaultAnnotation, "The annotation to trigger initialization")
 	flag.StringVar(&initializerName, "initializer-name", defaultInitializerName, "The initializer name")
 	flag.StringVar(&lxcfsDir, "lxcfs-dir", defaultLxcfsDir, "The lxcfs mount path")
+	flag.StringVar(&progation, "progation", defaultProgation, "The lxcfs mount progation settings: None/HostToContainer/Bidirectional, default None")
 	flag.StringVar(&namespace, "namespace", "default", "The configuration namespace")
 	flag.BoolVar(&requireAnnotation, "require-annotation", true, "Require annotation for initialization")
 	flag.Parse()
@@ -93,35 +97,43 @@ func main() {
 	}
 
 	//:/proc/cpuinfo:rw -v :/proc/diskstats:rw -v /var/lib/lxcfs/proc/meminfo:/proc/meminfo:rw -v /var/lib/lxcfs/proc/stat:/proc/stat:rw -v /var/lib/lxcfs/proc/uptime:/proc/uptime:rw -v /var/lib/lxcfs/proc/swaps:/proc/swaps:rw -v :/proc/loadavg
+	mountPropagation := corev1.MountPropagationMode(progation)
 	volumeMounts := 
 		[]corev1.VolumeMount{
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-cpuinfo",
 				MountPath: "/proc/cpuinfo",
+				MountPropagation: &mountPropagation,
 			},
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-meminfo",
 				MountPath: "/proc/meminfo",
+				MountPropagation: &mountPropagation,
 			},
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-diskstats",
 				MountPath: "/proc/diskstats",
+				MountPropagation: &mountPropagation,
 			},
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-stat",
 				MountPath: "/proc/stat",
+				MountPropagation: &mountPropagation,
 			},
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-uptime",
 				MountPath: "/proc/uptime",
+				MountPropagation: &mountPropagation,
 			},
 			corev1.VolumeMount{
 				Name:      "lxcfs-proc-swaps",
 				MountPath: "/proc/swaps",
+				MountPropagation: &mountPropagation,
 			},
 			corev1.VolumeMount{
 				Name:      "lxcfs-sys-cpu-online",
 				MountPath: "/sys/devices/system/cpu/online",
+				MountPropagation: &mountPropagation,
 			},
 		}
 	volumes := generateVolumes(volumeMounts, lxcfsDir)

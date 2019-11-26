@@ -70,6 +70,16 @@ func generateVolumes(volumeMounts []corev1.VolumeMount, prefix string) []corev1.
 				},
 			})
 	}
+	volumes = append(volumes, 
+		corev1.Volume{
+			Name: "lxcfs-root",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: prefix,
+				},
+			},
+		})
+
 	return volumes
 
 }
@@ -137,6 +147,12 @@ func main() {
 			},
 		}
 	volumes := generateVolumes(volumeMounts, lxcfsDir)
+	volumeMounts = append(volumeMounts,
+			corev1.VolumeMount{
+				Name:      "lxcfs-root",
+				MountPath: lxcfsDir,
+				MountPropagation: &mountPropagation,
+			})
 
 	c := &config{
 		volumeMounts: volumeMounts,

@@ -37,8 +37,8 @@ import (
 const (
 	defaultAnnotation      = "initializer.kubernetes.io/lxcfs"
 	defaultInitializerName = "lxcfs.initializer.kubernetes.io"
-	defaultLxcfsDir        = "/var/lib/lxcfs"
-	defaultProgation       = "None"
+	defaultLxcfsDir        = "/var/lib/lxcfs-root/lxcfs"
+	defaultProgation       = "HostToContainer"
 	defaultNamespace       = "default"
 )
 
@@ -75,7 +75,7 @@ func generateVolumes(volumeMounts []corev1.VolumeMount, prefix string) []corev1.
 			Name: "lxcfs-root",
 			VolumeSource: corev1.VolumeSource{
 				HostPath: &corev1.HostPathVolumeSource{
-					Path: prefix,
+					Path: path.Dir(prefix),
 				},
 			},
 		})
@@ -150,7 +150,7 @@ func main() {
 	volumeMounts = append(volumeMounts,
 			corev1.VolumeMount{
 				Name:      "lxcfs-root",
-				MountPath: lxcfsDir,
+				MountPath: path.Dir(lxcfsDir),
 				MountPropagation: &mountPropagation,
 			})
 
